@@ -1,0 +1,19 @@
+{
+  "name": "terminal_rss",
+  "version": "1.0.0",
+  "description": "Simple RSS client for the terminal",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "start": "node main.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+  },
+  "jest": {
+    "transform": {}
+  },
+  "author": "PFrek",
+  "license": "ISC",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}

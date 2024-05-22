@@ -1,3 +1,5 @@
+import { XMLParser } from "./src/xmlParser.js";
+
 async function fetchFeed(url) {
 	const response = await fetch(url, {
 		method: 'GET',
@@ -16,7 +18,9 @@ async function main() {
 
 	const body = await fetchFeed(feedURL);
 
-	console.log(body);
+	const root = new XMLParser().tokenize(body).parse();
+
+	console.log(root.toString());
 }
 
 

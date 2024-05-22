@@ -1,63 +1,101 @@
 import { test, expect } from '@jest/globals';
-import { LeafNode, ParentNode } from '../src/xmlParser';
+import { TextNode, ParentNode, XMLParser } from '../src/xmlParser.js';
 
 
-test('LeafNode to string', () => {
-	const leaf = new LeafNode('title', 'This is the title')
+test('TextNode to string', () => {
+	const leaf = new TextNode('This is the title')
 
 	const str = leaf.toString();
 
-	expect(str).toEqual('<title>This is the title</title>')
+	expect(str).toEqual('This is the title')
 })
 
 test('ParentNode to string', () => {
-	const parent = new ParentNode('parent1');
+	const parent = new ParentNode('root');
 
-	parent.addChild(new LeafNode('leaf1', 'The first leaf child'))
-	parent.addChild(new ParentNode('parent2', [new LeafNode('leaf2', 'A nested leaf child')]))
-	parent.addChild(new LeafNode('leaf3', 'The third leaf child'))
-	parent.addChild(new LeafNode('leaf4', 'The fourth leaf child'))
+	parent.addChild(new ParentNode('parent1', [new TextNode('The first text node')]));
+	parent.addChild(new ParentNode('parent2', [new TextNode('The second text node')]));
+	parent.addChild(new ParentNode('parent3', [
+		new ParentNode('innerParent', [
+			new TextNode('The third text node')
+		])
+	]));
 
 	const str = parent.toString();
 
-	expect(str).toEqual('<parent1><leaf1>The first leaf child</leaf1><parent2><leaf2>A nested leaf child</leaf2></parent2><leaf3>The third leaf child</leaf3><leaf4>The fourth leaf child</leaf4></parent1>')
+	expect(str).toEqual(`<root>\
+<parent1>The first text node</parent1>\
+<parent2>The second text node</parent2>\
+<parent3>\
+<innerParent>The third text node</innerParent>\
+</parent3>\
+</root>`)
 })
 
-test('XMLNode must have tag', () => {
+test('TextNode must have text', () => {
 	expect(() => {
-		const leaf = new LeafNode(null, 'My tag is null');
+		const leaf = new TextNode(null);
 	}).toThrow();
 
 	expect(() => {
-		const leaf = new LeafNode(undefined, 'My tag is undefined');
+		const leaf = new TextNode(undefined);
 	}).toThrow();
 
 	expect(() => {
-		const leaf = new LeafNode('', 'My tag is empty');
+		const leaf = new TextNode('');
 	}).toThrow();
 
 	expect(() => {
-		const leaf = new LeafNode('tag', 'I have a tag');
-		leaf.setTag(null);
-	}).toThrow();
-})
-
-test('LeafNode must have text', () => {
-	expect(() => {
-		const leaf = new LeafNode('text_null', null);
-	}).toThrow();
-
-	expect(() => {
-		const leaf = new LeafNode('text_undefined', undefined);
-	}).toThrow();
-
-	expect(() => {
-		const leaf = new LeafNode('text_empty', '');
-	}).toThrow();
-
-	expect(() => {
-		const leaf = new LeafNode('with_text', 'text');
+		const leaf = new TextNode('text');
 		leaf.setText(null);
 	}).toThrow();
 })
 
+test('XMLParser tokenizes correctly', () => {
+	const parser = new XMLParser();
+
+	parser.tokenize('<item><title>This is the title</title><desc>Description</desc></item>')
+
+	expect(parser.tokens).toEqual(['<item>', '<title>', 'This is the title', '</title>', '<desc>', 'Description', '</desc>', '</item>']);
+})
+
+test('XMLParser can extract tag from token', () => {
+	const parser = new XMLParser();
+
+	const tags = [];
+	tags.push(parser._getTokenTag('<item>'));
+	console.log(tags[0])
+	tags.push(parser._getTokenTag('</closing>'));
+	tags.push(parser._getTokenTag('No tag'));
+
+	expect(tags).toEqual([
+		'item',
+		'closing',
+		null
+	])
+})
+
+test('XMLParser can parse XML', () => {
+	const parser = new XMLParser();
+	const xml = `\
+<rss>\
+<title>RSS feed example</title>\
+<item>\
+<title>First item</title>\
+<desc>First item's description</desc>\
+</item>\
+<item>\
+<title>Second item</title>\
+<desc>Second item's description</desc>\
+</item>\
+<item>\
+<title>Third item</title>\
+<desc>Third item's description</desc>\
+</item>\
+</rss>`;
+
+	const root = parser.tokenize(xml).parse();
+
+	expect(root.toString()).toEqual(xml)
+
+});

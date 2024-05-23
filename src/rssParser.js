@@ -5,6 +5,57 @@ export class RSSFeed {
 		this.description = description;
 		this.entries = entries;
 	}
+
+	syncReadEntries(readTitles) {
+		for (let entry of this.entries) {
+			if (readTitles.includes(entry.title)) {
+				entry.read = true;
+			}
+		}
+	}
+
+	getRead() {
+		return this.entries.filter(entry => entry.read);
+	}
+	getUnread() {
+		return this.entries.filter(entry => !entry.read);
+	}
+
+	sortEntries(predicate, readFirst = false) {
+		if (readFirst) {
+			return [
+				...this.getRead().sort(predicate),
+				...this.getUnread().sort(predicate),
+			]
+		}
+
+		return [
+			...this.getUnread().sort(predicate),
+			...this.getRead().sort(predicate),
+		]
+	}
+
+	byDateAsc(entryA, entryB) {
+		const dateA = new Date(entryA.pubDate);
+		const dateB = new Date(entryB.pubDate);
+
+		return dateA - dateB;
+	}
+	byDateDesc(entryA, entryB) {
+		const dateA = new Date(entryA.pubDate);
+		const dateB = new Date(entryB.pubDate);
+
+		return dateB - dateA;
+	}
+
+	byTitleAsc(entryA, entryB) {
+		if (entryA.title > entryB.title) return 1;
+		if (entryA.title < entryB.title) return -1;
+	}
+	byTitleDesc(entryA, entryB) {
+		if (entryA.title > entryB.title) return -1;
+		if (entryA.title < entryB.title) return 1;
+	}
 }
 
 export class RSSEntry {
@@ -13,6 +64,7 @@ export class RSSEntry {
 		this.link = link;
 		this.description = description;
 		this.pubDate = pubDate;
+		this.read = false;
 	}
 }
 

@@ -42,10 +42,10 @@ export class RSSFeed {
 		this.link = newFeed.link;
 		this.description = newFeed.description;
 
-		for (const entry of this.entries) {
+		for (const entry of this.getRead()) {
 			const found = newFeed.entries.findIndex(elem => elem.title === entry.title);
 			if (found > -1) {
-				newFeed.entries[found].read = entry.read;
+				newFeed.entries[found].read = true;
 			}
 		}
 
@@ -88,6 +88,7 @@ export class RSSFeed {
 				entry.link,
 				entry.description,
 				entry.pubDate,
+				entry.read,
 			));
 		}
 	}
@@ -105,10 +106,10 @@ export class RSSFeed {
 
 			entryStr += `[${i}]`
 
-			entryStr += `${entry.title}\n`;
-			entryStr += `   ${entry.link}\n`;
-			entryStr += `   ${entry.description}\n`;
-			entryStr += `   ${entry.pubDate}\n`;
+			entryStr += ` \x1b[33m${entry.title}\x1b[0m\n`;
+			entryStr += `    ${entry.link}\n`;
+			entryStr += `    ${entry.description}\n`;
+			entryStr += `    ${entry.pubDate}\n`;
 
 			console.log(entryStr);
 		}
@@ -167,12 +168,12 @@ export class RSSFeed {
 }
 
 export class RSSEntry {
-	constructor(title = 'No Title', link = 'No Link', description = 'No Description', pubDate = 'No PubDate') {
+	constructor(title = 'No Title', link = 'No Link', description = 'No Description', pubDate = 'No PubDate', read = false) {
 		this.title = title;
 		this.link = link;
 		this.description = description;
 		this.pubDate = pubDate;
-		this.read = false;
+		this.read = read;
 	}
 }
 

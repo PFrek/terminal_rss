@@ -1,5 +1,6 @@
 import * as fs from "node:fs/promises";
 import { XMLParser } from "./xmlParser.js";
+import chalk from "chalk";
 
 export class RSSFeed {
 	constructor(title = 'No Title', link = 'No Link', description = 'No Description', entries = []) {
@@ -19,10 +20,9 @@ export class RSSFeed {
 			}
 		});
 
-		console.log(response.status);
 		if (response.status === 304) {
 			console.log('Cache hit');
-			return;
+			return response.status;
 		}
 
 		const lastModified = response.headers['last-modified'];
@@ -50,6 +50,8 @@ export class RSSFeed {
 		}
 
 		this.entries = newFeed.entries;
+
+		return response.status;
 	}
 
 	async saveToFile(filepath) {
@@ -101,15 +103,15 @@ export class RSSFeed {
 			const entry = entries[i];
 			let entryStr = '';
 			if (!entry.read) {
-				entryStr += '*';
+				entryStr += chalk.yellow('*');
 			}
 
 			entryStr += `[${i}]`
 
-			entryStr += ` \x1b[33m${entry.title}\x1b[0m\n`;
-			entryStr += `    ${entry.link}\n`;
+			entryStr += ` ${chalk.magenta(entry.title)}\n`;
+			entryStr += `    ${chalk.blue(entry.link)}\n`;
 			entryStr += `    ${entry.description}\n`;
-			entryStr += `    ${entry.pubDate}\n`;
+			entryStr += `    ${chalk.blue(entry.pubDate)}\n`;
 
 			console.log(entryStr);
 		}

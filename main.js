@@ -6,10 +6,12 @@ import { stdin as input, stdout as output } from 'node:process';
 async function update(feed, url, filename) {
 	try {
 		console.log(`New Fetch: ${new Date().toUTCString()}`)
-		await feed.fetch(url);
+		const status = await feed.fetch(url);
 		feed.saveToFile(filename);
 
 		feed.print();
+
+		console.log(`Response Status: ${status}`)
 	} catch (err) {
 		console.log(`Failed update cycle: ${err.message}`)
 	}

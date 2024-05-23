@@ -1,9 +1,9 @@
 export class RSSFeed {
-	constructor() {
-		this.title = 'No Title';
-		this.link = 'No Link';
-		this.description = 'No description';
-		this.entry = [];
+	constructor(title = 'No Title', link = 'No Link', description = 'No Description', entries = []) {
+		this.title = title;
+		this.link = link;
+		this.description = description;
+		this.entries = entries;
 	}
 }
 
@@ -20,6 +20,16 @@ export class RSSEntry {
 export class RSSParser {
 	constructor(xmlRoot) {
 		this.root = xmlRoot
+	}
+
+	parse() {
+		const entries = this._parseEntries()
+		return new RSSFeed(
+			this._parseFeedTitle(),
+			this._parseFeedLink(),
+			this._parseFeedDescription(),
+			entries,
+		)
 	}
 
 	_parsePaths(start, paths, fallback = 'No Data Found') {
@@ -79,21 +89,21 @@ export class RSSParser {
 		return this._parsePaths(entry, paths, fallback);
 	}
 
-	parseFeedTitle() {
+	_parseFeedTitle() {
 		const paths = ['channel/title'];
 		const fallback = 'No Feed Title';
 
 		return this._parsePaths(this.root, paths, fallback);
 	}
 
-	parseFeedDescription() {
+	_parseFeedDescription() {
 		const paths = ['channel/description'];
 		const fallback = 'No Feed Description';
 
 		return this._parsePaths(this.root, paths, fallback);
 	}
 
-	parseFeedLink() {
+	_parseFeedLink() {
 		const paths = ['channel/link'];
 		const fallback = 'No Feed Link';
 

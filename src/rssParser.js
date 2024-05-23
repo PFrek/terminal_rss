@@ -1,9 +1,117 @@
+import * as fs from "node:fs/promises";
+import { XMLParser } from "./xmlParser.js";
+
 export class RSSFeed {
 	constructor(title = 'No Title', link = 'No Link', description = 'No Description', entries = []) {
 		this.title = title;
 		this.link = link;
 		this.description = description;
 		this.entries = entries;
+		this.lastFetch = null;
+	}
+
+	async fetch(url) {
+		const response = await fetch(url, {
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/rss+xml',
+				'If-Modified-Since': this.lastFetch,
+			}
+		});
+
+		console.log(response.status);
+		if (response.status === 304) {
+			console.log('Cache hit');
+			return;
+		}
+
+		const lastModified = response.headers['last-modified'];
+		if (lastModified) {
+			this.lastFetch = lastModified;
+		} else {
+			this.lastFetch = new Date().toUTCString();
+		}
+
+		const xml = await response.text();
+
+		const xmlTree = new XMLParser(xml).tokenize().parse();
+
+		const newFeed = new RSSParser(xmlTree).parse();
+
+		this.title = newFeed.title;
+		this.link = newFeed.link;
+		this.description = newFeed.description;
+
+		for (const entry of this.entries) {
+			const found = newFeed.entries.findIndex(elem => elem.title === entry.title);
+			if (found > -1) {
+				newFeed.entries[found].read = entry.read;
+			}
+		}
+
+		this.entries = newFeed.entries;
+	}
+
+	async saveToFile(filepath) {
+		const data = JSON.stringify({
+			title: this.title,
+			link: this.link,
+			lastFetch: this.lastFetch,
+			entries: this.entries,
+		}, null, 2);
+
+		try {
+			await fs.writeFile(filepath, data);
+		} catch (err) {
+			console.log(`Failed to write to file ${filepath}: ${err}`);
+		}
+	}
+
+	async readFromFile(filepath) {
+		let data = null;
+		try {
+			data = await fs.readFile(filepath, { encoding: 'utf8' });
+			data = JSON.parse(data);
+		} catch (err) {
+			console.log(`Failed to read data from file ${filepath}: ${err}`);
+			return;
+		}
+
+		this.title = data.title;
+		this.link = data.link;
+		this.lastFetch = data.lastFetch;
+
+		this.entries = [];
+		for (const entry of data.entries) {
+			this.entries.push(new RSSEntry(
+				entry.title,
+				entry.link,
+				entry.description,
+				entry.pubDate,
+			));
+		}
+	}
+
+	print(entries = this.entries) {
+		console.log(`Feed: ${this.title}`);
+		console.log(`${this.link}`);
+
+		for (let i = 0; i < entries.length; i++) {
+			const entry = entries[i];
+			let entryStr = '';
+			if (!entry.read) {
+				entryStr += '*';
+			}
+
+			entryStr += `[${i}]`
+
+			entryStr += `${entry.title}\n`;
+			entryStr += `   ${entry.link}\n`;
+			entryStr += `   ${entry.description}\n`;
+			entryStr += `   ${entry.pubDate}\n`;
+
+			console.log(entryStr);
+		}
 	}
 
 	syncReadEntries(readTitles) {

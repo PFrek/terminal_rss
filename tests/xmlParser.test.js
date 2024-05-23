@@ -130,9 +130,10 @@ test('ParentNode can search a relative path', () => {
 })
 
 test('XMLParser tokenizes correctly', () => {
-	const parser = new XMLParser();
+	const xml = '<item><title>This is the title</title><desc>Description</desc></item>';
+	const parser = new XMLParser(xml);
 
-	parser.tokenize('<item><title>This is the title</title><desc>Description</desc></item>')
+	parser.tokenize();
 
 	expect(parser.tokens).toEqual(['<item>', '<title>', 'This is the title', '</title>', '<desc>', 'Description', '</desc>', '</item>']);
 })
@@ -153,7 +154,6 @@ test('XMLParser can extract tag from token', () => {
 })
 
 test('XMLParser can parse XML', () => {
-	const parser = new XMLParser();
 	const xml = `\
 <rss>\
 <title>RSS feed example</title>\
@@ -171,7 +171,9 @@ test('XMLParser can parse XML', () => {
 </item>\
 </rss>`;
 
-	const root = parser.tokenize(xml).parse();
+	const parser = new XMLParser(xml);
+
+	const root = parser.tokenize().parse();
 
 	expect(root.toString()).toEqual(xml)
 

@@ -112,13 +112,14 @@ export class ParentNode extends XMLNode {
 }
 
 export class XMLParser {
-	constructor() {
+	constructor(xml = '') {
+		this.xml = xml;
 		this.tokens = [];
 	}
 
-	tokenize(xmlString) {
+	tokenize() {
 		const regex = /<[^>]+>|[^<]+/g;
-		this.tokens = xmlString.match(regex).map((token) => token.trim()).filter((token) => token.length > 0);
+		this.tokens = this.xml.match(regex).map((token) => token.trim()).filter((token) => token.length > 0);
 
 		return this;
 	}

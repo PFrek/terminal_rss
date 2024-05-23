@@ -61,6 +61,16 @@ export class ParentNode extends XMLNode {
 		this._children.push(node);
 	}
 
+	getInnerText() {
+		for (const child of this._children) {
+			if (child.getText) {
+				return child.getText();
+			}
+		}
+
+		return null;
+	}
+
 	findTag(tag) {
 		if (this._tag === tag) {
 			return this;

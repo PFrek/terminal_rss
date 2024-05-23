@@ -51,6 +51,19 @@ test('ParentNode to string', () => {
 </root>`)
 })
 
+test('ParentNode can return inner nodes text', () => {
+	const parent1 = new ParentNode('entry', [new TextNode('Book A')]);
+
+	let text = parent1.getInnerText();
+
+	expect(text).toEqual('Book A');
+
+	const parent2 = new ParentNode('noText', []);
+
+	text = parent2.getInnerText();
+	expect(text).toBeNull();
+})
+
 test('ParentNode can search an absolute path', () => {
 	const parent = new ParentNode('root', [
 		new ParentNode('books', [

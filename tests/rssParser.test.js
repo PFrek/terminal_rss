@@ -209,3 +209,12 @@ test('RSSParser can parse feed', () => {
 			new RSSEntry('No Entry Title', 'http://rss.com/fifth_entry', 'The fifth entry', 'Wed, 23 May 2024 08:00:00 GMT'),
 		]))
 })
+
+test('RSSEntry can split long descriptions', () => {
+	const entry = new RSSEntry();
+	entry.description = '12345678';
+
+	let lines = entry._splitDescription(4);
+
+	expect(lines).toEqual(['1234', '5678'])
+})

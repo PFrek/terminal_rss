@@ -139,7 +139,12 @@ export class XMLParser {
 		let stack = [];
 		let root = null;
 
-		for (const token of this.tokens) {
+		for (let token of this.tokens) {
+			let match = token.match(/<!\[CDATA\[([^>\]]+)\]\]>/);
+			if (match) {
+				token = match[1];
+			}
+
 			if (token.startsWith('</')) {
 				stack.pop();
 			} else if (token.startsWith('<')) {
@@ -157,7 +162,7 @@ export class XMLParser {
 				}
 			} else { // Text node
 				let parent = stack.at(-1);
-				parent.addChild(new TextNode(token))
+				parent.addChild(new TextNode(token.trim()))
 			}
 		}
 

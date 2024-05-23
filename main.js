@@ -3,13 +3,14 @@ import * as readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 
 
-async function update(feed, url, filename) {
+async function update(feedObj) {
 	try {
 		console.log(`New Fetch: ${new Date().toUTCString()}`)
-		const status = await feed.fetch(url);
-		feed.saveToFile(filename);
+		const status = await feedObj.feed.fetch(feedObj.url);
+		feedObj.feed.saveToFile(feedObj.filename);
 
-		feed.print();
+		feedObj.feed.sortEntries(feedObj.feed.byDateAsc);
+		feedObj.feed.print();
 
 		console.log(`Response Status: ${status}`)
 	} catch (err) {
@@ -42,15 +43,23 @@ async function runCommand(command, feedObj) {
 help: Display this help menu
 update: Update the RSS Feed
 read-[#]: Set the entry [#] as read
-unread-[#]: Set the entry [#] as unread`)
+read-all: Set all entries as read
+unread-[#]: Set the entry [#] as unread
+unread-all: Set all entries as unread
+hide: Hide all entries marked as read
+show: Show read entries`)
 			break;
 
 		case 'update':
-			await update(feedObj.feed, feedObj.url, feedObj.filename);
+			await update(feedObj);
 			break;
 
 		case 'read':
-			{
+			if (value === 'all') {
+				for (let entry of feedObj.feed.entries) {
+					entry.read = true;
+				}
+			} else {
 				const index = Number.parseInt(value, 10);
 				if (index < 0 || index > feedObj.feed.entries.length) {
 					console.log(`Invalid entry index ${index}`)
@@ -64,7 +73,11 @@ unread-[#]: Set the entry [#] as unread`)
 			break;
 
 		case 'unread':
-			{
+			if (value === 'all') {
+				for (let entry of feedObj.feed.entries) {
+					entry.read = false;
+				}
+			} else {
 				const index = Number.parseInt(value, 10);
 				if (index < 0 || index > feedObj.feed.entries.length) {
 					console.log(`Invalid entry index ${index}`)
@@ -75,6 +88,16 @@ unread-[#]: Set the entry [#] as unread`)
 
 			feedObj.feed.print();
 
+			break;
+
+		case 'hide':
+			feedObj.feed.hideRead = true;
+			feedObj.feed.print();
+			break;
+
+		case 'show':
+			feedObj.feed.hideRead = false;
+			feedObj.feed.print();
 			break;
 
 		case 'exit':
@@ -114,7 +137,7 @@ async function main() {
 
 	await feedObj.feed.readFromFile(feedObj.filename);
 
-	await update(feedObj.feed, feedObj.url, feedObj.filename);
+	await update(feedObj);
 
 	const rl = readline.createInterface({ input, output })
 	let exit = false;

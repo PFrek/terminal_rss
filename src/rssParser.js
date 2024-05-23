@@ -1,6 +1,7 @@
 import * as fs from "node:fs/promises";
 import { XMLParser } from "./xmlParser.js";
 import chalk from "chalk";
+import stringLength from "string-length";
 
 export class RSSFeed {
 	constructor(title = 'No Title', link = 'No Link', description = 'No Description', entries = []) {
@@ -9,6 +10,8 @@ export class RSSFeed {
 		this.description = description;
 		this.entries = entries;
 		this.lastFetch = null;
+
+		this.hideRead = false;
 	}
 
 	async fetch(url) {
@@ -21,7 +24,6 @@ export class RSSFeed {
 		});
 
 		if (response.status === 304) {
-			console.log('Cache hit');
 			return response.status;
 		}
 
@@ -33,6 +35,8 @@ export class RSSFeed {
 		}
 
 		const xml = await response.text();
+
+		await fs.writeFile('log.xml', xml);
 
 		const xmlTree = new XMLParser(xml).tokenize().parse();
 
@@ -95,9 +99,27 @@ export class RSSFeed {
 		}
 	}
 
-	print(entries = this.entries) {
+	_padToWidth(text, maxWidth) {
+		const adjust = text.length - stringLength(text);
+		return text.padEnd(maxWidth + adjust, ' ');
+
+	}
+
+	print() {
 		console.log(`Feed: ${this.title}`);
 		console.log(`${this.link}`);
+
+		let entries = this.entries;
+		if (this.hideRead) {
+			entries = this.getUnread();
+		}
+
+		if (!entries || entries.length === 0) {
+			console.log(chalk.red('[No entries found]'));
+			return;
+		}
+
+		const maxWidth = process.stdout.columns;
 
 		for (let i = 0; i < entries.length; i++) {
 			const entry = entries[i];
@@ -107,11 +129,24 @@ export class RSSFeed {
 			}
 
 			entryStr += `[${i}]`
+			entryStr += ` ${chalk.magenta.bold(entry.title)}\n`;
 
-			entryStr += ` ${chalk.magenta(entry.title)}\n`;
-			entryStr += `    ${chalk.blue(entry.link)}\n`;
-			entryStr += `    ${entry.description}\n`;
-			entryStr += `    ${chalk.blue(entry.pubDate)}\n`;
+			let linkLine = '    ' + chalk.underline.blue(entry.link);
+			linkLine = this._padToWidth(linkLine, maxWidth);
+
+			entryStr += chalk.bgGray(linkLine) + '\n';
+
+			let descLines = entry._splitDescription(maxWidth - 4);
+			for (let line of descLines) {
+				line = '    ' + line;
+				line = line.padEnd(maxWidth, ' ');
+
+				entryStr += chalk.bgGray(line) + '\n';
+			}
+
+			let pubDateLine = '    ' + chalk.blue(entry.pubDate);
+			pubDateLine = this._padToWidth(pubDateLine, maxWidth);
+			entryStr += chalk.bgGray(pubDateLine) + '\n';
 
 			console.log(entryStr);
 		}
@@ -134,13 +169,14 @@ export class RSSFeed {
 
 	sortEntries(predicate, readFirst = false) {
 		if (readFirst) {
-			return [
+			this.entries = [
 				...this.getRead().sort(predicate),
 				...this.getUnread().sort(predicate),
 			]
+			return;
 		}
 
-		return [
+		this.entries = [
 			...this.getUnread().sort(predicate),
 			...this.getRead().sort(predicate),
 		]
@@ -176,6 +212,17 @@ export class RSSEntry {
 		this.description = description;
 		this.pubDate = pubDate;
 		this.read = read;
+	}
+
+	_splitDescription(maxWidth) {
+		let numLines = Math.ceil(this.description.length / maxWidth);
+
+		let lines = [];
+		for (let i = 0; i < numLines; i++) {
+			lines.push(this.description.slice(i * maxWidth, (i + 1) * maxWidth));
+		}
+
+		return lines;
 	}
 }
 

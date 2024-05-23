@@ -10,6 +10,25 @@ test('TextNode to string', () => {
 	expect(str).toEqual('This is the title')
 })
 
+test('TextNode must have text', () => {
+	expect(() => {
+		const leaf = new TextNode(null);
+	}).toThrow();
+
+	expect(() => {
+		const leaf = new TextNode(undefined);
+	}).toThrow();
+
+	expect(() => {
+		const leaf = new TextNode('');
+	}).toThrow();
+
+	expect(() => {
+		const leaf = new TextNode('text');
+		leaf.setText(null);
+	}).toThrow();
+})
+
 test('ParentNode to string', () => {
 	const parent = new ParentNode('root');
 
@@ -32,23 +51,69 @@ test('ParentNode to string', () => {
 </root>`)
 })
 
-test('TextNode must have text', () => {
-	expect(() => {
-		const leaf = new TextNode(null);
-	}).toThrow();
+test('ParentNode can search an absolute path', () => {
+	const parent = new ParentNode('root', [
+		new ParentNode('books', [
+			new ParentNode('entry', [new TextNode('Book A')]),
+			new ParentNode('entry', [new TextNode('Book B')]),
+			new ParentNode('entry', [new TextNode('Book C')]),
+		]),
+		new ParentNode('magazines', [
+			new ParentNode('entry', [new TextNode('Magazine A')]),
+			new ParentNode('entry', [new TextNode('Magazine B')]),
+		])
+	]);
 
-	expect(() => {
-		const leaf = new TextNode(undefined);
-	}).toThrow();
+	const matches = parent.search('/root/books/entry');
 
-	expect(() => {
-		const leaf = new TextNode('');
-	}).toThrow();
+	expect(matches).toEqual([
+		new ParentNode('entry', [new TextNode('Book A')]),
+		new ParentNode('entry', [new TextNode('Book B')]),
+		new ParentNode('entry', [new TextNode('Book C')]),
+	]);
+})
 
-	expect(() => {
-		const leaf = new TextNode('text');
-		leaf.setText(null);
-	}).toThrow();
+test('ParentNode can search a relative path', () => {
+	const parent = new ParentNode('root', [
+		new ParentNode('books', [
+			new ParentNode('entry', [new TextNode('Book A')]),
+			new ParentNode('entry', [new TextNode('Book B')]),
+			new ParentNode('entry', [new TextNode('Book C')]),
+		]),
+		new ParentNode('magazines', [
+			new ParentNode('entry', [new TextNode('Magazine A')]),
+			new ParentNode('entry', [new TextNode('Magazine B')]),
+		])
+	]);
+
+	let matches = parent.search('entry');
+
+	expect(matches).toEqual([
+		new ParentNode('entry', [new TextNode('Book A')]),
+		new ParentNode('entry', [new TextNode('Book B')]),
+		new ParentNode('entry', [new TextNode('Book C')]),
+		new ParentNode('entry', [new TextNode('Magazine A')]),
+		new ParentNode('entry', [new TextNode('Magazine B')]),
+	]);
+
+	matches = parent.search('books/entry');
+
+	expect(matches).toEqual([
+		new ParentNode('entry', [new TextNode('Book A')]),
+		new ParentNode('entry', [new TextNode('Book B')]),
+		new ParentNode('entry', [new TextNode('Book C')]),
+	]);
+
+	matches = parent.search('magazines/entry');
+
+	expect(matches).toEqual([
+		new ParentNode('entry', [new TextNode('Magazine A')]),
+		new ParentNode('entry', [new TextNode('Magazine B')]),
+	]);
+
+	matches = parent.search('videos/entry');
+
+	expect(matches).toEqual([]);
 })
 
 test('XMLParser tokenizes correctly', () => {
@@ -64,7 +129,6 @@ test('XMLParser can extract tag from token', () => {
 
 	const tags = [];
 	tags.push(parser._getTokenTag('<item>'));
-	console.log(tags[0])
 	tags.push(parser._getTokenTag('</closing>'));
 	tags.push(parser._getTokenTag('No tag'));
 
@@ -99,3 +163,4 @@ test('XMLParser can parse XML', () => {
 	expect(root.toString()).toEqual(xml)
 
 });
+

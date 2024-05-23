@@ -60,6 +60,45 @@ export class ParentNode extends XMLNode {
 	addChild(node) {
 		this._children.push(node);
 	}
+
+	findTag(tag) {
+		if (this._tag === tag) {
+			return this;
+		}
+
+		for (const child of this._children) {
+			const found = child.findTag(tag);
+			if (found) {
+				return found;
+			}
+		}
+
+		return null;
+	}
+
+	search(path, currentPath = '') {
+		let matches = [];
+		currentPath += `/${this._tag}`;
+
+		if (path.startsWith('/') && currentPath === path) {
+			matches.push(this);
+			return matches;
+		}
+
+		if (!path.startsWith('/') && currentPath.includes(path)) {
+			matches.push(this);
+			return matches;
+		}
+
+		for (const child of this._children) {
+			if (child.search) {
+				matches = matches.concat(child.search(path, currentPath));
+			}
+		}
+
+		return matches;
+	}
+
 }
 
 export class XMLParser {
@@ -69,7 +108,7 @@ export class XMLParser {
 
 	tokenize(xmlString) {
 		const regex = /<[^>]+>|[^<]+/g;
-		this.tokens = xmlString.match(regex);
+		this.tokens = xmlString.match(regex).map((token) => token.trim()).filter((token) => token.length > 0);
 
 		return this;
 	}

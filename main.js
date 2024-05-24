@@ -1,6 +1,7 @@
 import { RSSFeed } from './src/rssParser.js';
 import * as readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
+import { getLinksFromHTML, getPageHTML, getRSSLink } from './src/crawl.js';
 
 
 async function update(feedObj) {
@@ -121,17 +122,29 @@ async function main() {
 
 	let url = null;
 	try {
-		url = new URL(args[2]);
+		url = args[2];
 	} catch (err) {
 		console.log(`Failed to fetch feed: ${err.message}`);
 		return;
 	}
 
-	console.log(`Reading feed from ${url}`)
+	// Try to get an rss feed link from the url
+	console.log(`Looking for an RSS link in ${url}`);
+	let feedUrl = url;
+	const html = await getPageHTML(url);
+	if (html) {
+		const links = getLinksFromHTML(html);
+		const newUrl = getRSSLink(links, url);
+		if (newUrl) {
+			feedUrl = newUrl;
+		}
+	}
+
+	console.log(`Reading feed from ${feedUrl}`)
 
 	const feedObj = {
 		url,
-		filename: urlToFilename(url),
+		filename: urlToFilename(new URL(feedUrl)),
 		feed: new RSSFeed(),
 	};
 

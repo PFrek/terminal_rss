@@ -2,6 +2,7 @@ import * as fs from "node:fs/promises";
 import { XMLParser } from "./xmlParser.js";
 import chalk from "chalk";
 import stringLength from "string-length";
+import stringWidth from 'string-width';
 
 export class RSSFeed {
 	constructor(title = 'No Title', link = 'No Link', description = 'No Description', entries = []) {
@@ -172,7 +173,13 @@ export class RSSFeed {
 		return this.entries.filter(entry => !entry.read);
 	}
 
-	sortEntries(predicate, readFirst = false) {
+
+	sortEntries(predicate, readFirst = null) {
+		if (readFirst === null) {
+			this.entries.sort(predicate);
+			return;
+		}
+
 		if (readFirst) {
 			this.entries = [
 				...this.getRead().sort(predicate),
@@ -220,8 +227,15 @@ export class RSSEntry {
 	}
 
 	_splitDescription(maxWidth) {
+		const avgWidth = stringWidth(this.description) / stringLength(this.description);
+		if (Math.round(avgWidth) > 1) {
+			maxWidth = Math.floor(maxWidth / Math.round(avgWidth))
+			console.log(`Adjusted maxWidth down to ${maxWidth}`)
+		}
+
 		const validGaps = [' ', ',', '.', ';', '-'];
-		let numLines = Math.ceil(this.description.length / maxWidth);
+		let numLines = Math.ceil(stringLength(this.description) / maxWidth);
+		console.log(`NumLines: ${numLines}`)
 
 		let lines = [];
 		let offset = 0;
@@ -233,11 +247,18 @@ export class RSSEntry {
 			while (end !== this.description.length && !validGaps.includes(this.description[end - 1])) {
 				offset++;
 				end--;
+
+				if (end === start) {
+					end = start + maxWidth;
+					offset = 0;
+					break;
+				}
 			}
 
 			lines.push(this.description.slice(start, end));
 		}
 
+		console.log(lines);
 		return lines;
 	}
 }

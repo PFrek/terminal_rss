@@ -20,7 +20,7 @@ async function update(feedObj) {
 
 		feedObj.feed.saveToFile(feedObj.filename);
 
-		feedObj.feed.sortEntries(feedObj.feed.byDateAsc);
+		feedObj.feed.sortEntries(feedObj.feed.byDateAsc, null);
 		feedObj.feed.print();
 
 		console.log(`Response Status: ${status}`)

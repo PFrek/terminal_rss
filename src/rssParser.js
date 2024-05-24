@@ -41,7 +41,7 @@ export class RSSFeed {
 
 		const xml = await response.text();
 
-		await fs.writeFile('log.xml', xml);
+		// await fs.writeFile('log.xml', xml);
 
 		const xmlTree = new XMLParser(xml).tokenize().parse();
 

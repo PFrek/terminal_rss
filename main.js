@@ -2,6 +2,9 @@ import { RSSFeed } from './src/rssParser.js';
 import * as readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import { getLinksFromHTML, getPageHTML, getRSSLink } from './src/crawl.js';
+import path from 'node:path';
+
+const __dirname = import.meta.dirname;
 
 const EXIT_SIGN = true;
 const CONTINUE_SIGN = false;
@@ -153,7 +156,7 @@ async function main() {
 
 	const feedObj = {
 		url: feedURL,
-		filename: urlToFilename(new URL(feedURL)),
+		filename: path.join(__dirname, urlToFilename(new URL(feedURL))),
 		feed: new RSSFeed(),
 	};
 

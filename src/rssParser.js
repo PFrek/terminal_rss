@@ -131,7 +131,7 @@ export class RSSFeed {
 			entryStr += `[${i}]`
 			entryStr += ` ${chalk.magenta.bold(entry.title)}\n`;
 
-			let linkLine = '    ' + chalk.underline.blue(entry.link);
+			let linkLine = '    ' + chalk.blue(entry.link);
 			linkLine = this._padToWidth(linkLine, maxWidth);
 
 			entryStr += chalk.bgGray(linkLine) + '\n';
@@ -215,11 +215,22 @@ export class RSSEntry {
 	}
 
 	_splitDescription(maxWidth) {
+		const validGaps = [' ', ',', '.', ';', '-'];
 		let numLines = Math.ceil(this.description.length / maxWidth);
 
 		let lines = [];
+		let offset = 0;
 		for (let i = 0; i < numLines; i++) {
-			lines.push(this.description.slice(i * maxWidth, (i + 1) * maxWidth));
+			let start = i * maxWidth - offset;
+			offset = 0;
+			let end = start + maxWidth;
+
+			while (end !== this.description.length && !validGaps.includes(this.description[end - 1])) {
+				offset++;
+				end--;
+			}
+
+			lines.push(this.description.slice(start, end));
 		}
 
 		return lines;

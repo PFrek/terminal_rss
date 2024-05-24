@@ -27,6 +27,11 @@ export class RSSFeed {
 			return response.status;
 		}
 
+		if (response.status >= 400) {
+			console.log(`Failed to fetch ${url} - ${response.status}`);
+			return response.status;
+		}
+
 		const lastModified = response.headers['last-modified'];
 		if (lastModified) {
 			this.lastFetch = lastModified;

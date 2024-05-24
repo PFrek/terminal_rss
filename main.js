@@ -3,19 +3,28 @@ import * as readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import { getLinksFromHTML, getPageHTML, getRSSLink } from './src/crawl.js';
 
+const EXIT_SIGN = true;
+const CONTINUE_SIGN = false;
 
 async function update(feedObj) {
 	try {
 		console.log(`New Fetch: ${new Date().toUTCString()}`)
 		const status = await feedObj.feed.fetch(feedObj.url);
+		if (status >= 400 || feedObj.feed.entries.length === 0) {
+			feedObj.feed.print();
+			throw new Error('Failed to acquire entries');
+		}
+
 		feedObj.feed.saveToFile(feedObj.filename);
 
 		feedObj.feed.sortEntries(feedObj.feed.byDateAsc);
 		feedObj.feed.print();
 
 		console.log(`Response Status: ${status}`)
+		return CONTINUE_SIGN;
 	} catch (err) {
 		console.log(`Failed update cycle: ${err.message}`)
+		return EXIT_SIGN;
 	}
 }
 
@@ -31,7 +40,7 @@ async function runCommand(command, feedObj) {
 	const parts = command.split('-').map(part => part.trim()).filter(part => part.length > 0);
 	if (parts.length === 0) {
 		console.log(`Failed to parse command`);
-		return false;
+		return CONTINUE_SIGN;
 	}
 	const keyword = parts[0];
 	let value = null;
@@ -52,8 +61,7 @@ show: Show read entries`)
 			break;
 
 		case 'update':
-			await update(feedObj);
-			break;
+			return await update(feedObj);
 
 		case 'read':
 			if (value === 'all') {
@@ -103,13 +111,13 @@ show: Show read entries`)
 
 		case 'exit':
 			console.log('Exiting application');
-			return true;
+			return EXIT_SIGN;
 		default:
 			console.log('Invalid command. Enter help to see the available commands');
 			break;
 	}
 
-	return false;
+	return CONTINUE_SIGN;
 }
 
 async function main() {
@@ -130,30 +138,31 @@ async function main() {
 
 	// Try to get an rss feed link from the url
 	console.log(`Looking for an RSS link in ${url}`);
-	let feedUrl = url;
+	let feedURL = url;
 	const html = await getPageHTML(url);
 	if (html) {
 		const links = getLinksFromHTML(html);
 		const newUrl = getRSSLink(links, url);
 		if (newUrl) {
-			feedUrl = newUrl;
+			console.log(`Found RSS Feed: ${newUrl}`);
+			feedURL = newUrl;
 		}
 	}
 
-	console.log(`Reading feed from ${feedUrl}`)
+	console.log(`Reading feed from ${feedURL}`)
 
 	const feedObj = {
-		url,
-		filename: urlToFilename(new URL(feedUrl)),
+		url: feedURL,
+		filename: urlToFilename(new URL(feedURL)),
 		feed: new RSSFeed(),
 	};
 
 	await feedObj.feed.readFromFile(feedObj.filename);
 
-	await update(feedObj);
+
+	let exit = await update(feedObj);
 
 	const rl = readline.createInterface({ input, output })
-	let exit = false;
 	while (!exit) {
 		let command = '';
 		try {
@@ -166,7 +175,9 @@ async function main() {
 	}
 	rl.close();
 
-	feedObj.feed.saveToFile(feedObj.filename);
+	if (feedObj.feed.entries.length > 0) {
+		feedObj.feed.saveToFile(feedObj.filename);
+	}
 }
 
 

@@ -1,4 +1,7 @@
-import { JSDOM } from "jsdom";
+import { JSDOM, VirtualConsole } from "jsdom";
+
+const virtualConsole = new VirtualConsole();
+virtualConsole.on('error', () => { });
 
 
 export function normalizeURL(url) {
@@ -12,7 +15,7 @@ export function normalizeURL(url) {
 }
 
 export function getURLsFromHTML(htmlBody, baseURL) {
-	const dom = new JSDOM(htmlBody);
+	const dom = new JSDOM(htmlBody, { virtualConsole });
 
 	const anchors = dom.window.document.querySelectorAll('a');
 
@@ -33,7 +36,7 @@ export function getLinksFromHTML(htmlBody) {
 	if (!htmlBody) {
 		return [];
 	}
-	const dom = new JSDOM(htmlBody);
+	const dom = new JSDOM(htmlBody, { virtualConsole });
 
 	const anchors = dom.window.document.querySelectorAll('link');
 

@@ -42,7 +42,7 @@ export class RSSFeed {
 
 		const xml = await response.text();
 
-		// await fs.writeFile('log.xml', xml);
+		await fs.writeFile('log.xml', xml);
 
 		const xmlTree = new XMLParser(xml).tokenize().parse();
 
@@ -135,22 +135,28 @@ export class RSSFeed {
 			}
 
 			entryStr += `[${i}]`
-			entryStr += ` ${chalk.magenta.bold(entry.title)}\n`;
+			const titlePadding = stringWidth(entryStr) + 1;
+			let titleLines = entry._splitTitle(maxWidth - titlePadding);
+			entryStr += ` ${chalk.magenta.bold(titleLines[0])}\n`;
+			for (let i = 1; i < titleLines.length; i++) {
+				entryStr += ' '.repeat(titlePadding);
+				entryStr += chalk.magenta.bold(titleLines[i]) + '\n';
+			};
 
-			let linkLine = '    ' + chalk.blue(entry.link);
+			let linkLine = ' '.repeat(titlePadding) + chalk.blue(entry.link);
 			linkLine = this._padToWidth(linkLine, maxWidth);
 
 			entryStr += chalk.bgGray(linkLine) + '\n';
 
-			let descLines = entry._splitDescription(maxWidth - 4);
+			let descLines = entry._splitDescription(maxWidth - titlePadding);
 			for (let line of descLines) {
-				line = '    ' + line;
+				line = ' '.repeat(titlePadding) + line;
 				line = line.padEnd(maxWidth, ' ');
 
 				entryStr += chalk.bgGray(line) + '\n';
 			}
 
-			let pubDateLine = '    ' + chalk.blue(entry.pubDate);
+			let pubDateLine = ' '.repeat(titlePadding) + chalk.blue(entry.pubDate);
 			pubDateLine = this._padToWidth(pubDateLine, maxWidth);
 			entryStr += chalk.bgGray(pubDateLine) + '\n';
 
@@ -226,39 +232,46 @@ export class RSSEntry {
 		this.read = read;
 	}
 
+	_splitTitle(maxWidth) {
+		return this._splitText(this.title, maxWidth);
+	}
+
 	_splitDescription(maxWidth) {
-		const avgWidth = stringWidth(this.description) / stringLength(this.description);
+		return this._splitText(this.description, maxWidth);
+	}
+
+	_splitText(text, maxWidth) {
+		const avgWidth = stringWidth(text) / stringLength(text);
 		if (Math.round(avgWidth) > 1) {
 			maxWidth = Math.floor(maxWidth / Math.round(avgWidth))
-			console.log(`Adjusted maxWidth down to ${maxWidth}`)
 		}
 
 		const validGaps = [' ', ',', '.', ';', '-'];
-		let numLines = Math.ceil(stringLength(this.description) / maxWidth);
-		console.log(`NumLines: ${numLines}`)
+		let numLines = Math.ceil(stringLength(text) / maxWidth);
 
 		let lines = [];
-		let offset = 0;
+		let curOffset = 0;
+		let accumulatedOffset = 0;
 		for (let i = 0; i < numLines; i++) {
-			let start = i * maxWidth - offset;
-			offset = 0;
+			let start = i * maxWidth - accumulatedOffset;
+			curOffset = 0;
 			let end = start + maxWidth;
 
-			while (end !== this.description.length && !validGaps.includes(this.description[end - 1])) {
-				offset++;
+			while (end !== text.length && !validGaps.includes(text[end - 1])) {
+				curOffset++;
 				end--;
 
 				if (end === start) {
 					end = start + maxWidth;
-					offset = 0;
+					curOffset = 0;
 					break;
 				}
 			}
 
-			lines.push(this.description.slice(start, end));
+			accumulatedOffset += curOffset;
+			lines.push(text.slice(start, end));
 		}
 
-		console.log(lines);
 		return lines;
 	}
 }
@@ -288,7 +301,17 @@ export class RSSParser {
 		}
 
 		return fallback;
+	}
 
+	_parsePathsOne(start, paths, fallback = 'No Data Found') {
+		for (const path of paths) {
+			const nodes = start.searchOne(path);
+			if (nodes.length > 0) {
+				return nodes[0].getInnerText();
+			}
+		}
+
+		return fallback;
 	}
 
 	_parseEntries() {
@@ -315,46 +338,46 @@ export class RSSParser {
 		const paths = ['title'];
 		const fallback = 'No Entry Title';
 
-		return this._parsePaths(entry, paths, fallback);
+		return this._parsePathsOne(entry, paths, fallback);
 	}
 	_parseEntryLink(entry) {
 		const paths = ['link'];
 		const fallback = 'No Entry Link';
 
-		return this._parsePaths(entry, paths, fallback);
+		return this._parsePathsOne(entry, paths, fallback);
 	}
 	_parseEntryDescription(entry) {
 		const paths = ['description'];
 		const fallback = 'No Entry Description';
 
-		return this._parsePaths(entry, paths, fallback);
+		return this._parsePathsOne(entry, paths, fallback);
 	}
 	_parseEntryPubDate(entry) {
 		const paths = ['pubDate'];
 		const fallback = 'No Entry PubDate';
 
-		return this._parsePaths(entry, paths, fallback);
+		return this._parsePathsOne(entry, paths, fallback);
 	}
 
 	_parseFeedTitle() {
 		const paths = ['channel/title'];
 		const fallback = 'No Feed Title';
 
-		return this._parsePaths(this.root, paths, fallback);
+		return this._parsePathsOne(this.root, paths, fallback);
 	}
 
 	_parseFeedDescription() {
 		const paths = ['channel/description'];
 		const fallback = 'No Feed Description';
 
-		return this._parsePaths(this.root, paths, fallback);
+		return this._parsePathsOne(this.root, paths, fallback);
 	}
 
 	_parseFeedLink() {
 		const paths = ['channel/link'];
 		const fallback = 'No Feed Link';
 
-		return this._parsePaths(this.root, paths, fallback);
+		return this._parsePathsOne(this.root, paths, fallback);
 	}
 }
 

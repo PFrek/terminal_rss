@@ -109,6 +109,32 @@ export class ParentNode extends XMLNode {
 		return matches;
 	}
 
+	searchOne(path, currentPath = '') {
+		let matches = [];
+		currentPath += `/${this._tag}`;
+
+		if (path.startsWith('/') && currentPath === path) {
+			matches.push(this);
+			return matches;
+		}
+
+		if (!path.startsWith('/') && currentPath.includes(path)) {
+			matches.push(this);
+			return matches;
+		}
+
+		for (const child of this._children) {
+			if (child.searchOne) {
+				const match = child.searchOne(path, currentPath);
+				if (match.length > 0) {
+					matches = matches.concat(match);
+					break;
+				}
+			}
+		}
+
+		return matches;
+	}
 }
 
 export class XMLParser {
@@ -125,7 +151,7 @@ export class XMLParser {
 	}
 
 	_getTokenTag(token) {
-		const regex = /<\/?([^>]+)>/;
+		const regex = /<\/?([^> ]+)[^>]*>/;
 		const match = token.match(regex);
 
 		if (match) {
@@ -140,7 +166,7 @@ export class XMLParser {
 		let root = null;
 
 		for (let token of this.tokens) {
-			let match = token.match(/<!\[CDATA\[([^>\]]+)\]\]>/);
+			let match = token.match(/<!\[CDATA\[([^>]+)\]\]>/);
 			if (match) {
 				token = match[1];
 			}
@@ -149,6 +175,8 @@ export class XMLParser {
 				stack.pop();
 			} else if (token.startsWith('<')) {
 				let node = new ParentNode(this._getTokenTag(token));
+				if (token.includes('description')) {
+				}
 
 				if (stack.length === 0) {
 					root = node;

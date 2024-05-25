@@ -1,4 +1,0 @@
-https://apnews.com/index.rss
-https://www.androidpolice.com/feed/
-https://feeds.bbci.co.uk/news/rss.xml
-https://feeds.bbci.co.uk/news/world/rss.xml

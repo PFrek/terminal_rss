@@ -15,12 +15,6 @@ A simple RSS client that runs in the terminal and fetches rss entries with their
 - npm install
 - Run main.js with node or npm start
 
-## Videos
-
-![]
-
-![]
-
 ## Usage
 
 ### Starting the RSS Client
@@ -102,3 +96,9 @@ To show all entries again:
 ```
 show
 ```
+
+## Videos
+
+https://github.com/PFrek/terminal_rss/assets/16858378/78dbc9ce-645e-4e7d-be6b-5c0f8782ade9
+
+https://github.com/PFrek/terminal_rss/assets/16858378/e414e3f2-46ce-4e13-83f2-81b733a8aa6f
